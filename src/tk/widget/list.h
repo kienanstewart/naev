@@ -29,6 +29,8 @@ void window_addList( const unsigned int wid,
       void (*call) (unsigned int,char*) );
 
 /* Misc functions. */
+char* lst_remove( const unsigned int wid, const char* name, int index );
+void lst_add( const unsigned int wid, const char*, char* entry );
 char* toolkit_getList( const unsigned int wid, const char* name );
 int toolkit_getListPos( const unsigned int wid, const char* name );
 char* toolkit_setList( const unsigned int wid, const char* name, char* value );

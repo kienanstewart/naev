@@ -91,6 +91,65 @@ void window_addList( const unsigned int wid,
 
 
 /**
+ * @brief Removes the item at index, if it exists and returns a copy of it
+ * @note The returned pointer, if not NULL, should be freed unless it's being used for something else
+ *
+ *    @param lst the list Widget
+ *    @param index the integer index
+ *    @@return char* the item removed (it is not freed!)
+ */
+char* lst_remove( const unsigned int wid, const char* name, int idx )
+{
+   char *old, **newoptions, **oldoptions;
+   int newsize, i, newi = 0;
+   Widget* lst = window_getwgt(wid, name);
+   if (lst == NULL)
+      return NULL;
+   if (idx < 0 || idx >= lst->dat.lst.noptions)
+      return NULL;
+   /* de-select if necessary */
+   oldoptions = lst->dat.lst.options;
+   old = oldoptions[idx];
+   newsize = lst->dat.lst.noptions - 1;
+   newoptions = malloc(newsize*sizeof(char*));
+   for (i=0; i<newsize+1; i++) {
+      if (i == idx)
+         continue;
+      newoptions[newi++] = oldoptions[i]; 
+   }
+   free(lst->dat.lst.options);
+   lst->dat.lst.options = newoptions;
+   lst->dat.lst.noptions = newsize;
+   if (lst->dat.lst.selected >= newsize)
+      lst->dat.lst.selected = 0;
+   return old;
+}
+
+
+/**
+ * @brief Adds an entry to the list
+ *
+ *    @param lst List widget to add the entry to
+ *    @param entry char* entry to add
+ */
+void lst_add( const unsigned int wid, const char* name, char* entry )
+{
+   int newsize;
+   char **newoptions;
+   Widget* lst = window_getwgt(wid, name);
+   if (lst == NULL)
+      return;
+   if (entry == NULL)
+      return;
+   newsize = lst->dat.lst.noptions + 1;
+   newoptions = realloc(lst->dat.lst.options, newsize*sizeof(char*));
+   newoptions[newsize-1] = entry;
+   lst->dat.lst.options = newoptions;
+   lst->dat.lst.noptions = newsize;
+}
+
+
+/**
  * @brief Renders a list widget.
  *
  *    @param lst List widget to render.
