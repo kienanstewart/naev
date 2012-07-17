@@ -1236,7 +1236,7 @@ void pilot_updateDisable( Pilot* p, const unsigned int shooter )
        */
       p->dtimer = 20. * pow( p->armour, 0.25 );
       p->dtimer_accum = 0.;
-
+      
       /* Disable active outfits. */
       if (pilot_outfitOffAll( p ) > 0)
          pilot_calcStats( p );
@@ -1752,18 +1752,15 @@ void pilot_update( Pilot* pilot, const double dt )
    if (pilot_isFlag(pilot, PILOT_REFUELBOARDING))
       pilot_refuel(pilot, dt);
 
-   /* Pilot is boarding its target.  Hack to match speeds. */
    if (pilot_isFlag(pilot, PILOT_BOARDING)) {
-      if (target==NULL)
-         pilot_rmFlag(pilot, PILOT_BOARDING);
-      else {
+      /* Non-player pilot is boarding its target.  Hack to match speeds. */
+      if (!pilot_isPlayer(pilot)) {
          /* Match speeds. */
-         vectcpy( &pilot->solid->vel, &target->solid->vel );
-
-         /* See if boarding is finished. */
-         if (pilot->ptimer < 0.)
-            pilot_boardComplete(pilot);
+         vectcpy( &pilot->solid->vel, &target->solid->vel );   
       }
+      pilot_boardUpdate(pilot);
+      if (pilot->ptimer < 0.)
+         pilot_boardComplete(pilot);
    }
 
    /* Update weapons. */
@@ -2049,6 +2046,34 @@ ntime_t pilot_hyperspaceDelay( Pilot *p )
    int stu;
    stu = (int)(NT_STP_STU * p->stats.jump_delay);
    return ntime_create( 0, 0, stu );
+}
+
+
+/**
+ * @brief returns an array of char* for the items that can be taken from the pilot
+ *
+ *    @param p Pilot to get lootable itesm for.
+ */
+char** pilot_getLootableItems( Pilot *p, int* lootcount )
+{
+   if (p == NULL)
+      return NULL;
+   char** items = malloc(4*sizeof(char*));
+   char *item1, *item2, *item3, *item4;
+   item1 = calloc(PATH_MAX, sizeof(char));
+   item2 = calloc(PATH_MAX, sizeof(char));
+   item3 = calloc(PATH_MAX, sizeof(char));
+   item4 = calloc(PATH_MAX, sizeof(char));
+   nsnprintf(item1, 5, "Fuel");
+   nsnprintf(item2, 5, "Ammo");
+   nsnprintf(item3, 8, "Credits");
+   nsnprintf(item4, 12, "Commodities");
+   items[0] = item1;
+   items[1] = item2;
+   items[2] = item3;
+   items[3] = item4;
+   *lootcount = 4;
+   return items;
 }
 
 
@@ -2611,7 +2636,7 @@ void pilots_update( double dt )
             pilot_rmFlag(p, PILOT_HYP_END);
       }
       /* Must not be boarding to think. */
-      else if (!pilot_isFlag(p, PILOT_BOARDING) &&
+      else if (!(pilot_isFlag(p, PILOT_BOARDING) && !pilot_isPlayer(p)) &&
             !pilot_isFlag(p, PILOT_REFUELBOARDING) &&
             /* Must not be landing nor taking off. */
             !pilot_isFlag(p, PILOT_LANDING) &&

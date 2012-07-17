@@ -463,6 +463,7 @@ void pilot_clearTimers( Pilot *pilot );
 int pilot_hasDeployed( Pilot *p );
 int pilot_dock( Pilot *p, Pilot *target, int deployed );
 ntime_t pilot_hyperspaceDelay( Pilot *p );
+char ** pilot_getLootableItems( Pilot *p, int* lootcount );
 
 
 /*
