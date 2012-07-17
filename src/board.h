@@ -17,7 +17,8 @@ enum {
    BOARD_NOTDISABLED, /* Target is not disabled */
    BOARD_DISTANCE, /* Target is too far away */
    BOARD_SPEED, /* Going too fast */
-   BOARD_BOARDING /* Already boarding a target */
+   BOARD_BOARDING, /* Already boarding a target */
+   BOARD_COOLDOWNSTART /* Started cooldown, interrupting the boarding */
 };
 
 int player_isBoarded (void);

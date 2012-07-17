@@ -654,6 +654,10 @@ void pilot_cooldown( Pilot *p )
    double heat_capacity, heat_mean;
    PilotOutfitSlot *o;
 
+   /* Cancel boarding if necessary */
+   if (pilot_isFlag(p, PILOT_BOARDING))
+      pilot_boardCancel(p, BOARD_COOLDOWNSTART);
+
    /* Brake if necessary. */
    if (VMOD(p->solid->vel) > MIN_VEL_ERR) {
       pilot_setFlag(p, PILOT_COOLDOWN_BRAKE);

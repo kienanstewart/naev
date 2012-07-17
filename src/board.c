@@ -661,6 +661,8 @@ void pilot_boardCancel( Pilot* p, int reason )
          player_message("\erYou are now too far away to continue boarding.");
       else if (reason == BOARD_SPEED)
          player_message("\erYou are now going too fast to continue boarding.");
+      else if (reason == BOARD_COOLDOWNSTART)
+         player_message("\erStarting the active cooldown interrupted the boarding process.");
       else
          player_message("\erUnknown reason for boarding termination: %d", reason);
       board_cleanPlayerBoard();
