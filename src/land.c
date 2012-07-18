@@ -250,6 +250,9 @@ static void commodity_update( unsigned int wid, char* str )
          "NA Tons\n" );
       window_modifyText( wid, "txtDInfo", buf );
       window_modifyText( wid, "txtDesc", "No outfits available." );
+      window_disableButton( wid, "btnCommodityBuy" );
+      window_disableButton( wid, "btnCommoditySell" );
+      return;
    }
    com = commodity_get( comname );
 
@@ -1330,6 +1333,9 @@ void land( Planet* p, int load )
 
    /* Resets the player's heat. */
    pilot_heatReset( player.p );
+
+   /* Heal the player so GUI shows player at full everything. */
+   pilot_healLanded( player.p );
 
    /* Stop player sounds. */
    player_soundStop();
