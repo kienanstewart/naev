@@ -75,7 +75,7 @@ int player_isBoarded (void)
 void player_board (void)
 {
    Pilot *p, *target;
-   unsigned int wdw, canboard;
+   unsigned int canboard;
    char c;
    HookParam hparam[2];
    p = player.p;
@@ -119,7 +119,7 @@ void player_board (void)
    }
    /* show window to give player a choice of what to take */
    player_message("\epBoarding ship \e%c%s\e0.", c, target->name);
-   wdw = board_createWindow(p, target);
+   board_createWindow(p, target);
 }
 
 
