@@ -8,6 +8,7 @@
 
 
 #include "pilot.h"
+#include "math.h"
 
 enum {
    BOARD_CANBOARD, /* can board */
@@ -20,6 +21,9 @@ enum {
    BOARD_BOARDING, /* Already boarding a target */
    BOARD_COOLDOWNSTART /* Started cooldown, interrupting the boarding */
 };
+
+#define BOARD_MINTIME 0.75
+#define BOARD_MAXTIME 10.
 
 int player_isBoarded (void);
 void player_board (void);

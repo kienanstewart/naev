@@ -8,7 +8,6 @@
  * @brief Deals with boarding ships.
  */
 
-
 #include "board.h"
 
 #include "naev.h"
@@ -55,6 +54,7 @@ static void board_onBoardingStartPressed( unsigned int wdw, char* wgtname );
 static void board_cleanPlayerBoard();
 static void board_playerBoardComplete( Pilot* p );
 static void player_showBoardFailMessage( int reason );
+double board_boardTime( Pilot *p, Pilot *target );
 
 /**
  * @brief Gets if the player is boarded.
@@ -610,7 +610,7 @@ int pilot_board( Pilot *p )
        return 0;
    pilot_setFlag(p, PILOT_BOARDING);
    /* Set time it takes to board. */
-   p->ptimer = 3.;
+   p->ptimer = board_boardTime(p, pilot_get(p->target));
    return 1;
 }
 
@@ -737,3 +737,29 @@ void pilot_boardComplete( Pilot *p )
    }
 }
 
+
+/**
+ * @brief Gets the time it should take to board another ship.
+ * @note The time taken is relative to the crew sizes between the ships. 
+      A small ship boarding a large ship will take a long time, and 
+      a large ship boarding a small ship will take a short time.
+ *     
+ *    @param p Pilot that is doing the boarding
+ *    @param target Pilot that is being boarded
+ *    @return double, the time it will take. If the time is < 0.0f then it should be considered an error
+ * 
+ */
+double board_boardTime( Pilot *p, Pilot *target )
+{
+   double boardtime; 
+   if (p == NULL)
+      return -1.;
+   if (target == NULL)
+      return -1.;
+   boardtime = exp(target->crew / p->crew);
+   /* No longer than BOARD_MAXTIME */
+   boardtime = (boardtime > BOARD_MAXTIME) ? BOARD_MAXTIME : boardtime;
+   /* No shorter than BOARD_MINTIME */
+   boardtime = (boardtime < BOARD_MINTIME) ? BOARD_MINTIME : boardtime;
+   return boardtime;
+}
