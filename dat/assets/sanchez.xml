@@ -29,6 +29,7 @@
   <bar>The bar is quiet and orderly, with a few deals going down in closed-off booths, nice food, and only the occasional drunken brawl. The lord of Shanchez doesn't appreciate louts, it seems.</bar>
  </general>
  <tech>
+  <item>Systems Low</item>
   <item>Pirate Ships</item>
   <item>Kinetic 2</item>
   <item>Basic Outfits 1</item>
@@ -41,5 +42,8 @@
   <item>Ion 3</item>
   <item>Star Maps</item>
   <item>Missiles 1</item>
+  <item>Hulls High</item>
+  <item>Engines High</item>
+  <item>Systems High</item>
  </tech>
 </asset>

@@ -79,12 +79,16 @@ typedef enum ShipStatsType_ {
    /*
     * A: Absolute double type data. Should be continuous.
     */
-   SS_TYPE_A_ENGINE_LIMIT,    /**< Engine's mass limit. */
+   SS_TYPE_A_ENERGY_FLAT,      /**< Flat energy modifier (not multiplied). */
+   SS_TYPE_A_ENERGY_REGEN_FLAT, /**< Flat energy regeneration modifier (not multiplied). */
+   SS_TYPE_A_CPU_MAX,          /**< Maximum CPU modifier. */
+   SS_TYPE_A_ENGINE_LIMIT,     /**< Engine's mass limit. */
    SS_TYPE_A_FUEL_CONSUMPTION, /**< Fuel consumption of the engine. */
 
    /*
     * I: Integer type data. Should be continuous.
     */
+   SS_TYPE_I_HIDDEN_JUMP_DETECT, /**< Hidden jump detection. */
 
    /*
     * B: Boolean type data. Should be continuous.
@@ -157,7 +161,10 @@ typedef struct ShipStats_ {
    double shield_regen_mod;   /**< Shield regeneration multiplier. */
    double energy_mod;         /**< Energy multiplier. */
    double energy_regen_mod;   /**< Energy regeneration multiplier. */
+   double energy_flat;        /**< Energy modifier (flat). */
+   double energy_regen_flat;  /**< Energy regen modifier (flat). */
    double cpu_mod;            /**< CPU multiplier. */
+   double cpu_max;            /**< CPU modifier. */
 
    /* Freighter-type. */
    double jump_delay;      /**< Modulates the time that passes during a hyperspace jump. */
@@ -200,7 +207,8 @@ typedef struct ShipStats_ {
    double nebula_dmg_shield; /**< Shield nebula resistance. */
    double nebula_dmg_armour; /**< Armour nebula resistance. */
    int misc_instant_jump;    /**< Do not require brake or chargeup to jump. */
-   int misc_reverse_thrust;  /**< Do not require brake or chargeup to jump. */
+   int misc_reverse_thrust;  /**< Slows down the ship instead of turning it around. */
+   int misc_hidden_jump_detect; /**< Degree of hidden jump detection. */
 } ShipStats;
 
 

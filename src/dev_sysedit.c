@@ -477,6 +477,7 @@ static void sysedit_btnScale( unsigned int wid_unused, char *unused )
 
    sys   = sysedit_sys; /* Comfort. */
    s     = atof(str);
+   free(str);
 
    /* In case screwed up. */
    if ((s < 0.1) || (s > 10.)) {
@@ -1181,6 +1182,7 @@ static void sysedit_editPnt( void )
    window_addInput( wid, x += l + 5, y, 30, 20, "inpPresenceRange", 1, 1, NULL );
    window_setInputFilter( wid, "inpPresenceRange",
          "abcdefghijklmnopqrstuvwyzABCDEFGHIJKLMNOPQRSTUVWXYZ[]{}()-=*/\\'\"~<>!@#$%^&|_`." );
+   x += 30 + 10;
 
    s = "hide";
    l = gl_printWidthRaw( NULL, s );

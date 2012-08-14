@@ -129,6 +129,7 @@ void equipment_rightClickOutfits( unsigned int wid, char* str )
    if (strcmp(clicked_outfit,"None")==0)
       return;
 
+   /* Try to get the outfit. */
    o = outfit_get(clicked_outfit);
    if (o == NULL)
       return;
@@ -152,7 +153,7 @@ void equipment_rightClickOutfits( unsigned int wid, char* str )
    }
 
    /* Loop through outfit slots of the right type, try to find an empty one */
-   for (i=0; i < outfit_n; i++) {
+   for (i=0; i<outfit_n; i++) {
 
       /* Slot full. */
       if (slots[i].outfit != NULL)
@@ -409,7 +410,7 @@ static void equipment_renderColumn( double x, double y, double w, double h,
       else {
          if ((o != NULL) &&
                (lst[i].sslot->slot.type == o->slot.type)) {
-            if (pilot_canEquip( p, &lst[i], o, 1 ) != NULL)
+            if (pilot_canEquip( p, &lst[i], o ) != NULL)
                c = &cRed;
             else
                c = &cDConsole;
@@ -613,7 +614,7 @@ static void equipment_renderOverlayColumn( double x, double y, double w, double 
          if ((i==mover) && (wgt->canmodify)) {
             if (lst[i].outfit != NULL) {
                top = 1;
-               display = pilot_canEquip( wgt->selected, &lst[i], lst[i].outfit, 0 );
+               display = pilot_canEquip( wgt->selected, &lst[i], NULL );
                if (display != NULL)
                   c = &cRed;
                else {
@@ -624,7 +625,7 @@ static void equipment_renderOverlayColumn( double x, double y, double w, double 
             else if ((wgt->outfit != NULL) &&
                   (lst->sslot->slot.type == wgt->outfit->slot.type)) {
                top = 0;
-               display = pilot_canEquip( wgt->selected, &lst[i], wgt->outfit, 1 );
+               display = pilot_canEquip( wgt->selected, &lst[i], wgt->outfit );
                if (display != NULL)
                   c = &cRed;
                else {
@@ -772,16 +773,13 @@ static void equipment_renderOverlaySlots( double bx, double by, double bw, doubl
    if (o->desc_short == NULL)
       return;
    pos = nsnprintf( alt, sizeof(alt),
-         "%s\n"
-         "\n"
          "%s",
-         o->name,
-         o->desc_short );
+         o->name );
    if ((o->slot.spid!=0) && (pos < (int)sizeof(alt)))
-      pos += snprintf( &alt[pos], sizeof(alt)-pos, "\eSSlot %s\e0\n",
+      pos += snprintf( &alt[pos], sizeof(alt)-pos, "\n\eSSlot %s\e0",
             sp_display( o->slot.spid ) );
    if (pos < (int)sizeof(alt))
-      pos += snprintf( &alt[pos], sizeof(alt)-pos, "\n%s", o->desc_short );
+      pos += snprintf( &alt[pos], sizeof(alt)-pos, "\n\n%s", o->desc_short );
    if ((o->mass > 0.) && (pos < (int)sizeof(alt)))
       snprintf( &alt[pos], sizeof(alt)-pos,
             "\n%.0f Tons",
@@ -1069,7 +1067,7 @@ static int equipment_swapSlot( unsigned int wid, Pilot *p, PilotOutfitSlot *slot
       o = slot->outfit;
 
       /* Must be able to remove. */
-      if (pilot_canEquip( eq_wgt.selected, slot, o, 0 ) != NULL)
+      if (pilot_canEquip( eq_wgt.selected, slot, NULL ) != NULL)
          return 0;
 
       /* Remove ammo first. */
@@ -1103,7 +1101,7 @@ static int equipment_swapSlot( unsigned int wid, Pilot *p, PilotOutfitSlot *slot
          return 0;
 
       /* Must be able to add. */
-      if (pilot_canEquip( eq_wgt.selected, NULL, o, 1 ) != NULL)
+      if (pilot_canEquip( eq_wgt.selected, slot, o ) != NULL)
          return 0;
 
       /* Add outfit to ship. */
@@ -1193,6 +1191,8 @@ void equipment_regenLists( unsigned int wid, int outfits, int ships )
          toolkit_setImageArrayPos(    wtmp, EQUIPMENT_OUTFITS, nout[i] );
          toolkit_setImageArrayOffset( wtmp, EQUIPMENT_OUTFITS, offout[i] );
       }
+      i = window_tabWinGetActive(   wid, EQUIPMENT_OUTFIT_TAB );
+      equipment_updateOutfitSingle( outfit_windows[i], NULL );
    }
    if (ships) {
       toolkit_setImageArrayPos(    wid, EQUIPMENT_SHIPS, nship );

@@ -364,7 +364,7 @@ int pilot_addOutfitTest( Pilot* pilot, Outfit* outfit, PilotOutfitSlot *s, int w
                pilot->name, outfit->name );
       return -1;
    }
-   else if ((str = pilot_canEquip( pilot, s, outfit, 1)) != NULL) {
+   else if ((str = pilot_canEquip( pilot, s, outfit)) != NULL) {
       if (warn)
          WARN( "Pilot '%s': Trying to add outfit but %s",
                pilot->name, str );
@@ -449,7 +449,7 @@ int pilot_rmOutfit( Pilot* pilot, PilotOutfitSlot *s )
    const char *str;
    int ret;
 
-   str = pilot_canEquip( pilot, s, s->outfit, 0 );
+   str = pilot_canEquip( pilot, s, NULL );
    if (str != NULL) {
       WARN("Pilot '%s': Trying to remove outfit but %s",
             pilot->name, str );
@@ -479,34 +479,39 @@ const char* pilot_checkSanity( Pilot *p )
             !outfit_fitsSlot( p->outfits[i]->outfit, &p->outfits[i]->sslot->slot ))
          return "Doesn't fit slot";
 
+   /* CPU. */
    if (p->cpu < 0)
-      return "Negative CPU";
+      return "Insufficient CPU";
 
    /* Movement. */
    if (p->thrust < 0.)
-      return "Negative Thrust";
+      return "Insufficient Thrust";
    if (p->speed < 0.)
-      return "Negative Speed";
+      return "Insufficient Speed";
    if (p->turn < 0.)
-      return "Negative Turn";
+      return "Insufficient Turn";
 
    /* Health. */
    if (p->armour_max < 0.)
-      return "Negative Armour";
+      return "Insufficient Armour";
    if (p->armour_regen < 0.)
-      return "Negative Armour Regeneration";
+      return "Insufficient Armour Regeneration";
    if (p->shield_max < 0.)
-      return "Negative Shield";
+      return "Insufficient Shield";
    if (p->shield_regen < 0.)
-      return "Negative Shield Regeneration";
+      return "Insufficient Shield Regeneration";
    if (p->energy_max < 0.)
-      return "Negative Energy";
+      return "Insufficient Energy";
    if (p->energy_regen < 0.)
-      return "Negative Energy Regeneration";
+      return "Insufficient Energy Regeneration";
 
    /* Misc. */
    if (p->fuel_max < 0.)
-      return "Negative Fuel Maximum";
+      return "Insufficient Fuel Maximum";
+   if (p->fuel_consumption < 0.)
+      return "Insufficient Fuel Consumption";
+   if (p->cargo_free < 0)
+      return "Insufficient Free Cargo Space";
 
    /* All OK. */
    return NULL;
@@ -533,143 +538,65 @@ static int pilot_hasOutfitLimit( Pilot *p, const char *limit )
    return 0;
 }
 
-#define CHECK_STAT_R( oa, or, pa, s ) \
-   if (((oa)+(or)*((pa)+(oa)) < 0.) && (fabs((oa)+(or)*((oa)+(pa))) > (pa))) \
-      return (s)
-#define CHECK_STAT( oa, pa, s ) \
-   if ((( (oa) < 0.) && (fabs(oa)) > (pa))) \
-      return (s)
 /**
  * @brief Checks to see if can equip/remove an outfit from a slot.
  *
  *    @param p Pilot to check if can equip.
  *    @param s Slot being checked to see if it can equip/remove an outfit.
- *    @param o Outfit to check.
- *    @param add Whether or not to consider it's being added or removed.
+ *    @param o Outfit to check (NULL if being removed).
  *    @return NULL if can swap, or error message if can't.
  */
-const char* pilot_canEquip( Pilot *p, PilotOutfitSlot *s, Outfit *o, int add )
+const char* pilot_canEquip( Pilot *p, PilotOutfitSlot *s, Outfit *o )
 {
+   Outfit *o_old;
+   const char *err;
+   double pa, ps, pe, pf;
+
    /* Just in case. */
-   if ((p==NULL) || (o==NULL))
+   if ((p==NULL) || (s==NULL))
       return "Nothing selected.";
 
-   /* Check slot type. */
-   if ((s != NULL) && !outfit_fitsSlot( o, &s->sslot->slot ))
-      return "Does not fit slot.";
-
-   /* Adding outfit. */
-   if (add) {
-      if ((outfit_cpu(o) > 0) && (p->cpu < outfit_cpu(o)))
-         return "Insufficient CPU";
-
-      /* Can't add more than one outfit of the same type if the outfit type is limited. */
+   if (o!=NULL) {
+      /* Check slot type. */
+      if (!outfit_fitsSlot( o, &s->sslot->slot ))
+         return "Does not fit slot.";
+      /* Check outfit limit. */
       if ((o->limit != NULL) && pilot_hasOutfitLimit( p, o->limit ))
          return "Already have an outfit of this type installed";
-
-      /* Must not drive some things negative. */
-      if (outfit_isMod(o)) {
-         /*
-          * Movement.
-          */
-         /* TODO fix this to work with ship stats.
-         CHECK_STAT_R( o->u.mod.thrust, o->u.mod.thrust_rel, p->ship->thrust, "Insufficient thrust" );
-         CHECK_STAT_R( o->u.mod.turn, o->u.mod.turn_rel, p->ship->turn, "Insufficient turn" );
-         CHECK_STAT_R( o->u.mod.speed, o->u.mod.speed_rel, p->ship->speed, "Insufficient speed" );
-         */
-
-         /*
-          * Health.
-          */
-         /* Max. */
-         /* TODO fix this to work with ship stats.
-         CHECK_STAT_R( o->u.mod.armour, o->u.mod.armour_rel, p->armour_max, "Insufficient armour" );
-         CHECK_STAT_R( o->u.mod.shield, o->u.mod.shield_rel, p->shield_max, "Insufficient shield" );
-         CHECK_STAT_R( o->u.mod.energy, o->u.mod.energy_rel, p->energy_max, "Insufficient energy" );
-         */
-         /* Regen. */
-         /* TODO fix this to work with ship stats.
-         CHECK_STAT( o->u.mod.armour_regen, p->armour_regen, "Insufficient armour regeneration" );
-         CHECK_STAT( o->u.mod.shield_regen, p->shield_regen, "Insufficient shield regeneration" );
-         CHECK_STAT( o->u.mod.energy_regen, p->energy_regen, "Insufficient energy regeneration" );
-         */
-
-         /*
-          * Misc.
-          */
-         CHECK_STAT( o->u.mod.fuel, p->fuel_max, "Insufficient fuel" );
-         CHECK_STAT( o->u.mod.cargo, p->cargo_free, "Insufficient cargo space" );
-      }
    }
-   /* Removing outfit. */
    else {
-      if ((outfit_cpu(o) < 0) && (p->cpu < fabs(outfit_cpu(o))))
-         return "Lower CPU usage first";
-
-      /* Must not drive some things negative. */
-      if (outfit_isMod(o)) {
-         /*
-          * Movement.
-          */
-         /* TODO fix this to work with ship stats.
-         if (((o->u.mod.thrust + o->u.mod.thrust_rel * p->ship->thrust) > 0) &&
-               (o->u.mod.thrust + o->u.mod.thrust_rel * p->ship->thrust > p->thrust))
-            return "Increase thrust first";
-         if (((o->u.mod.speed + o->u.mod.speed_rel * p->ship->speed) > 0) &&
-               (o->u.mod.speed + o->u.mod.speed_rel * p->ship->speed > p->speed))
-            return "Increase speed first";
-         if (((o->u.mod.turn + o->u.mod.turn_rel * p->ship->turn * p->ship->mass/p->solid->mass) > 0) &&
-               (fabs(o->u.mod.turn + o->u.mod.turn_rel * p->ship->turn * p->ship->mass/p->solid->mass) > p->turn_base))
-            return "Increase turn first";
-         */
-
-         /*
-          * Health.
-          */
-         /* Max. */
-         /* TODO fix this to work with ship stats.
-         if ((o->u.mod.armour > 0) &&
-               (o->u.mod.armour > p->armour_max))
-            return "Increase armour first";
-         if ((o->u.mod.shield > 0) &&
-               (o->u.mod.shield > p->shield_max))
-            return "Increase shield first";
-         if ((o->u.mod.energy > 0) &&
-               (o->u.mod.energy > p->energy_max))
-            return "Increase energy first";
-         */
-         /* Regen. */
-         /* TODO fix this to work with ship stats.
-         if ((o->u.mod.armour_regen > 0) &&
-               (o->u.mod.armour_regen > p->armour_regen))
-            return "Lower energy usage first";
-         if ((o->u.mod.shield_regen > 0) &&
-               (o->u.mod.shield_regen > p->shield_regen))
-            return "Lower shield usage first";
-         if ((o->u.mod.energy_regen > 0) &&
-               (o->u.mod.energy_regen > p->energy_regen))
-            return "Lower energy usage first";
-         */
-
-         /*
-          * Misc.
-          */
-         if ((o->u.mod.fuel > 0) &&
-               (o->u.mod.fuel > p->fuel_max))
-            return "Increase fuel first";
-         if ((o->u.mod.cargo > 0) &&
-               (o->u.mod.cargo > p->cargo_free))
-            return "Increase free cargo space first";
-
-      }
-      else if (outfit_isFighterBay(o)) {
-         if ((s!=NULL) && (s->u.ammo.deployed > 0))
-            return "Recall the fighters first";
-      }
+      /* Check fighter bay. */
+      if ((o==NULL) && (s!=NULL) && (s->u.ammo.deployed > 0))
+         return "Recall the fighters first";
    }
 
-   /* Can equip. */
-   return NULL;
+   /* Store health. */
+   pa = p->armour;
+   ps = p->shield;
+   pe = p->energy;
+   pf = p->fuel;
+
+   /* Swap outfit. */
+   o_old       = s->outfit;
+   s->outfit   = o;
+
+   /* Check sanity. */
+   pilot_calcStats( p );
+   err = pilot_checkSanity( p );
+
+   /* Swap back. */
+   s->outfit   = o_old;
+
+   /* Recalc. */
+   pilot_calcStats( p );
+
+   /* Recover health. */
+   p->armour = pa;
+   p->shield = ps;
+   p->energy = pe;
+   p->fuel   = pf;
+   
+   return err;
 }
 
 
@@ -875,15 +802,16 @@ void pilot_calcStats( Pilot* pilot )
     */
    /* mass */
    pilot->solid->mass   = pilot->ship->mass;
+   /* cpu */
+   pilot->cpu           = 0.;
    /* movement */
    pilot->thrust_base   = pilot->ship->thrust;
    pilot->turn_base     = pilot->ship->turn;
    pilot->speed_base    = pilot->ship->speed;
-   /* cpu */
-   pilot->cpu_max       = pilot->ship->cpu;
-   pilot->cpu           = pilot->cpu_max;
    /* crew */
    pilot->crew          = pilot->ship->crew;
+   /* cargo */
+   pilot->cap_cargo     = pilot->ship->cap_cargo;
    /* health */
    ac = (pilot->armour_max > 0.) ? pilot->armour / pilot->armour_max : 0.;
    sc = (pilot->shield_max > 0.) ? pilot->shield / pilot->shield_max : 0.;
@@ -905,13 +833,8 @@ void pilot_calcStats( Pilot* pilot )
    memcpy( s, &pilot->ship->stats_array, sizeof(ShipStats) );
    memset( &amount, 0, sizeof(ShipStats) );
 
-   /* cargo has to be reset */
-   pilot_cargoCalc(pilot);
-
-   /* Slot voodoo. */
-
    /*
-    * now add outfit changes
+    * Now add outfit changes
     */
    pilot->mass_outfit   = 0.;
    pilot->jamming       = 0;
@@ -923,10 +846,8 @@ void pilot_calcStats( Pilot* pilot )
       if (o==NULL)
          continue;
 
-      /* Subtract CPU. */
-      pilot->cpu           -= outfit_cpu(o);
-      if (outfit_cpu(o) < 0.)
-         pilot->cpu_max    -= outfit_cpu(o);
+      /* Modify CPU. */
+      pilot->cpu           += outfit_cpu(o);
 
       /* Add mass. */
       pilot->mass_outfit   += o->mass;
@@ -956,7 +877,7 @@ void pilot_calcStats( Pilot* pilot )
          /* Fuel. */
          pilot->fuel_max      += o->u.mod.fuel;
          /* Misc. */
-         pilot->cargo_free    += o->u.mod.cargo;
+         pilot->cap_cargo     += o->u.mod.cargo;
          pilot->mass_outfit   += o->u.mod.mass_rel * pilot->ship->mass;
          pilot->crew          += o->u.mod.crew_rel * pilot->ship->crew;
          /*
@@ -1042,15 +963,29 @@ void pilot_calcStats( Pilot* pilot )
    pilot->shield_regen *= s->shield_regen_mod;
    pilot->energy_max   *= s->energy_mod;
    pilot->energy_regen *= s->energy_regen_mod;
+   /* cpu */
+   pilot->cpu_max       = (pilot->ship->cpu + s->cpu_max)*s->cpu_mod;
+   pilot->cpu          += pilot->cpu_max; /* CPU is negative, this just sets it so it's based off of cpu_max. */
    /* Misc. */
    pilot->dmg_absorb    = MAX( 0., pilot->dmg_absorb );
    pilot->crew         *= s->crew_mod;
+   pilot->cap_cargo    *= s->cargo_mod;
+
+   /*
+    * Flat increases.
+    */
+   pilot->energy_max   += s->energy_flat;
+   pilot->energy       += s->energy_flat;
+   pilot->energy_regen += s->energy_regen_flat;
 
    /* Give the pilot his health proportion back */
    pilot->armour = ac * pilot->armour_max;
    pilot->shield = sc * pilot->shield_max;
    pilot->energy = ec * pilot->energy_max;
    pilot->fuel   = fc * pilot->fuel_max;
+
+   /* Cargo has to be reset. */
+   pilot_cargoCalc(pilot);
 
    /* Calculate mass. */
    pilot->solid->mass = s->mass_mod*pilot->ship->mass + pilot->stats.cargo_inertia*pilot->mass_cargo + pilot->mass_outfit;
